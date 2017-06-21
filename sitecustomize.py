@@ -75,4 +75,5 @@ def myinit(session_object, target='', graph=None, config=None):
     print("Intercepted!")
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
+    oldinit(session_object, target='', graph=None, config=config)
 tf.Session.__init__ = myinit
