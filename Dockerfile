@@ -296,6 +296,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
             libcudnn6-dev=$CUDNN_VERSION-1+cuda8.0 && \
     rm -rf /var/lib/apt/lists/*
 
+### INSTALL 7: (modified) tensorflow-tensorflow:latest-gpu
+### (https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/docker/Dockerfile.gpu)
+
+RUN echo "INSTALL 7: (modified) tensorflow-tensorflow:latest-gpu"
 
 # Pick up some TF dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -330,10 +334,6 @@ RUN pip --no-cache-dir install \
         && \
     python -m ipykernel.kernelspec
 
-### INSTALL 7: tensorflow
-
-RUN echo "INSTALL 7: tensorflow"
-
 USER $NB_USER
 
 # Install Python 3 Tensorflow
@@ -351,7 +351,7 @@ EXPOSE 6006
 EXPOSE 8888
 
 # Copy notebooks and sitecustom modules
-COPY notebooks/* $HOME
+COPY notebooks/* $HOME/
 COPY sitecustomize.py /opt/conda/lib/python3.5/sitecustomize.py
 COPY sitecustomize.py /etc/python2.7/sitecustomize.py
 
