@@ -1,14 +1,14 @@
 FROM ubuntu:16.04
 
+### INSTALL 1: jupyter-docker-stacks-base-notebook 
+### (https://github.com/jupyter/docker-stacks/blob/master/base-notebook/Dockerfile)
 
-### INSTALL Jupyter Base-notebook https://github.com/jupyter/docker-stacks/blob/master/base-notebook/Dockerfile
+RUN echo "INSTALL 1: jupyter-docker-stacks-base-notebook"
+
 USER root
 
 # Install all OS dependencies for notebook server that starts but lacks all
 # features (e.g., download as all possible file formats)
-ENV DEBIAN_FRONTEND noninteractive
-#RUN REPO=http://cdn-fastly.deb.debian.org \
-# && echo "deb $REPO/debian jessie main\ndeb $REPO/debian-security jessie/updates main" > #/etc/apt/sources.list \
 
 RUN apt-get update && apt-get -yq dist-upgrade \
  && apt-get install -yq --no-install-recommends \
@@ -71,9 +71,6 @@ RUN conda install --quiet --yes \
 
 USER root
 
-EXPOSE 8888
-WORKDIR $HOME
-
 # Configure container startup
 ENTRYPOINT ["tini", "--"]
 CMD ["start-notebook.sh"]
@@ -87,8 +84,10 @@ RUN chown -R $NB_USER:users /etc/jupyter/
 
 
 
-## INSTALL Minimal notebook https://github.com/jupyter/docker-stacks/blob/master/minimal-notebook/Dockerfile
+### INSTALL 2: jupyter-docker-stacks-minimal-notebook 
+### (https://github.com/jupyter/docker-stacks/blob/master/minimal-notebook/Dockerfile)
 
+RUN echo "INSTALL 2: jupyter-docker-stacks-minimal-notebook"
 USER root
 
 # Install all OS dependencies for fully functional notebook server
@@ -115,7 +114,10 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 
-## INSTALL Scipy-notebook https://github.com/jupyter/docker-stacks/blob/master/scipy-notebook/Dockerfile
+### INSTALL 3: jupyter-docker-stacks-scipy-notebook 
+### (https://github.com/jupyter/docker-stacks/blob/master/scipy-notebook/Dockerfile)
+
+RUN echo "INSTALL 3: jupyter-docker-stacks-scipy-notebook"
 
 USER root
 
@@ -191,6 +193,7 @@ RUN conda create --quiet --yes -p $CONDA_DIR/envs/python2 python=2.7 \
     'xlrd' && \
     conda remove -n python2 --quiet --yes --force qt pyqt && \
     conda clean -tipsy
+
 # Add shortcuts to distinguish pip for python2 and python3 envs
 RUN ln -s $CONDA_DIR/envs/python2/bin/pip $CONDA_DIR/bin/pip2 && \
     ln -s $CONDA_DIR/bin/pip $CONDA_DIR/bin/pip3
@@ -211,7 +214,13 @@ RUN pip install kernda --no-cache && \
     pip uninstall kernda -y
 
 
-## INSTALL RUNTIME https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/runtime/Dockerfile
+### INSTALL 4: nvidia-cuda-8.0-runtime-ubuntu16.04
+### (https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/runtime/Dockerfile)
+
+RUN echo "INSTALL 4: nvidia-cuda-8.0-runtime-ubuntu16.04"
+
+USER root
+
 LABEL com.nvidia.volumes.needed="nvidia_driver"
 
 RUN NVIDIA_GPGKEY_SUM=d1be581509378368edeec8c1eb2958702feedf3bc3d17011adbf24efacce4ab5 && \
@@ -248,7 +257,10 @@ ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 
-## INSTALL DEVEL https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/devel/Dockerfile
+### INSTALL 5: nvidia-cuda-8.0-devel-ubuntu16.04
+### (https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/devel/Dockerfile)
+
+RUN echo "INSTALL 5: nvidia-cuda-8.0-devel-ubuntu16.04"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cuda-core-$CUDA_PKG_VERSION \
@@ -269,7 +281,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV LIBRARY_PATH /usr/local/cuda/lib64/stubs:${LIBRARY_PATH}
 
-# Install CUDA - CNN6 Devel https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/devel/cudnn6/Dockerfile
+### INSTALL 6: nvidia-cuda-8.0-cudnn6-devel-ubuntu16.04
+### (https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/devel/cudnn6/Dockerfile)
+
+RUN echo "INSTALL 6: nvidia-cuda-8.0-cudnn6-devel-ubuntu16.04"
+
 RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
 
 ENV CUDNN_VERSION 6.0.21
@@ -314,19 +330,9 @@ RUN pip --no-cache-dir install \
         && \
     python -m ipykernel.kernelspec
 
-# --- DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
-# These lines will be edited automatically by parameterized_docker_build.sh. #
-# COPY _PIP_FILE_ /
-# RUN pip --no-cache-dir install /_PIP_FILE_
-# RUN rm -f /_PIP_FILE_
+### INSTALL 7: tensorflow
 
-# Install TensorFlow GPU version.
-#RUN pip --no-cache-dir install \
-#    http://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-0.0.0-cp27-none-linux_x86_64.whl
-# --- ~ DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
-
-# RUN ln -s /usr/bin/python3 /usr/bin/python#
-
+RUN echo "INSTALL 7: tensorflow"
 
 USER $NB_USER
 
@@ -336,18 +342,6 @@ RUN conda install --quiet --yes 'tensorflow-gpu=1.0*'
 # Install Python 2 Tensorflow
 RUN conda install --quiet --yes -n python2 'tensorflow-gpu=1.0*'
 
-
-# Set up our notebook config.
-#COPY jupyter_notebook_config.py /root/.jupyter/
-
-# Copy sample notebooks.
-#COPY notebooks /notebooks
-
-# Jupyter has issues with being run directly:
-#   https://github.com/ipython/ipython/issues/7062
-# We just add a little wrapper script.
-#COPY run_jupyter.sh /
-
 # For CUDA profiling, TensorFlow requires CUPTI.
 ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 
@@ -356,7 +350,10 @@ EXPOSE 6006
 # IPython
 EXPOSE 8888
 
-WORKDIR "/notebooks"
+# Copy notebooks and sitecustom modules
+COPY notebooks/* $HOME
+COPY sitecustomize.py /opt/conda/lib/python3.5/sitecustomize.py
+COPY sitecustomize.py /etc/python2.7/sitecustomize.py
 
-USER $NB_USER
-# CMD ["/run_jupyter.sh", "--allow-root"]
+WORKDIR $HOME
+
