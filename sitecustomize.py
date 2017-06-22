@@ -31,26 +31,14 @@ def list_available_gpus():
 def gpu_memory_map():
     """Returns map of GPU id to memory allocated on that GPU."""
 
-    output = run_command("nvidia-smi")
-    gpu_output = output[output.find("GPU Memory"):]
-    # lines of the form
-    # |    0      8734    C   python                                       11705MiB |
-    memory_regex = re.compile(r"[|]\s+?(?P<gpu_id>\d+)\D+?(?P<pid>\d+).+[ ](?P<gpu_memory>\d+)MiB")
-    rows = gpu_output.split("\n")
-    result = {gpu_id: 0 for gpu_id in list_available_gpus()}
-    for row in gpu_output.split("\n"):
-        m = memory_regex.search(row)
-        if not m:
-            continue
-        gpu_id = int(m.group("gpu_id"))
-        gpu_memory = int(m.group("gpu_memory"))
-        result[gpu_id] += gpu_memory
-    return result
+    output = run_command("nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits")
+    rows = output.strip().split("\n")
+    return rows
 
 def pick_gpu_lowest_memory():
     """Returns GPU with the least allocated memory"""
 
-    memory_gpu_map = [(memory, gpu_id) for (gpu_id, memory) in gpu_memory_map().items()]
+    memory_gpu_map = [(memory, gpu_id) for (gpu_id, memory) in enumerate(gpu_memory_map())]
     best_memory, best_gpu = sorted(memory_gpu_map)[0]
     return best_gpu
 
