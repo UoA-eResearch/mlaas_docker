@@ -8,5 +8,5 @@ if [[ ! -z "${JUPYTERHUB_API_TOKEN}" ]]; then
   # launched by JupyterHub, use single-user entrypoint
   exec /usr/local/bin/start-singleuser.sh $*
 else
-  jupyter notebook --allow-root $*
+  jupyter notebook --allow-root --ip=0.0.0.0 $*
 fi
