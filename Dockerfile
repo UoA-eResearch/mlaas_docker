@@ -30,3 +30,4 @@ EXPOSE 8888
 
 COPY notebooks/* $HOME/
 
+WORKDIR $HOME
