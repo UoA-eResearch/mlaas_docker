@@ -52,6 +52,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from PIL import Image
 
+import time
+
 # pylint: disable=line-too-long
 DATA_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
 # pylint: enable=line-too-long
@@ -220,6 +222,7 @@ def download_url(url, filename=None):
   return filepath
 
 def download_show_and_run(url, filename=None, device=''):
+    s = time.time()
     image = download_url(url, filename)
     if image:
         matplotlib.rc('xtick', labelsize=20) 
@@ -247,6 +250,7 @@ def download_show_and_run(url, filename=None, device=''):
 
         plt.tight_layout()
         plt.show()
+        print("Took {}s".format(time.time() - s))
 
 def setup():
   maybe_download_and_extract()
