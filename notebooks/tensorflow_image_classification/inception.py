@@ -134,7 +134,7 @@ def create_graph():
     _ = tf.import_graph_def(graph_def, name='')
 
 
-def run_inference_on_image(image, device=''):
+def run_inference_on_image(image, filename, device=''):
   """Runs inference on an image.
 
   Args:
