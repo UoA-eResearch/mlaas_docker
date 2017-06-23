@@ -132,7 +132,7 @@ def create_graph():
     _ = tf.import_graph_def(graph_def, name='')
 
 
-def run_inference_on_image(image):
+def run_inference_on_image(image, device=''):
   """Runs inference on an image.
 
   Args:
@@ -148,31 +148,37 @@ def run_inference_on_image(image):
   # Creates graph from saved GraphDef.
   create_graph()
 
-  with tf.Session() as sess:
-    # Some useful tensors:
-    # 'softmax:0': A tensor containing the normalized prediction across
-    #   1000 labels.
-    # 'pool_3:0': A tensor containing the next-to-last layer containing 2048
-    #   float description of the image.
-    # 'DecodeJpeg/contents:0': A tensor containing a string providing JPEG
-    #   encoding of the image.
-    # Runs the softmax tensor by feeding the image_data as input to the graph.
-    softmax_tensor = sess.graph.get_tensor_by_name('softmax:0')
-    predictions = sess.run(softmax_tensor,
-                           {'DecodeJpeg/contents:0': image_data})
-    predictions = np.squeeze(predictions)
+  with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
 
-    # Creates node ID --> English string lookup.
-    node_lookup = NodeLookup()
+      # Some useful tensors:
+      # 'softmax:0': A tensor containing the normalized prediction across
+      #   1000 labels.
+      # 'pool_3:0': A tensor containing the next-to-last layer containing 2048
+      #   float description of the image.
+      # 'DecodeJpeg/contents:0': A tensor containing a string providing JPEG
+      #   encoding of the image.
+      # Runs the softmax tensor by feeding the image_data as input to the graph.
+      if device:
+        with tf.device(device):
+          softmax_tensor = sess.graph.get_tensor_by_name('softmax:0')
+          predictions = sess.run(softmax_tensor,{'DecodeJpeg/contents:0': image_data})
+      else:
+          softmax_tensor = sess.graph.get_tensor_by_name('softmax:0')
+          predictions = sess.run(softmax_tensor,{'DecodeJpeg/contents:0': image_data}) 
+          
+      predictions = np.squeeze(predictions)
 
-    top_k = predictions.argsort()[-NUM_PREDICTIONS:][::-1]
-    results = []
-    for node_id in top_k:
-      human_string = node_lookup.id_to_string(node_id)
-      score = predictions[node_id]
-      results.append((human_string, score))
-      #print('%s (score = %.5f)' % (human_string, score))
-    return results
+      # Creates node ID --> English string lookup.
+      node_lookup = NodeLookup()
+
+      top_k = predictions.argsort()[-NUM_PREDICTIONS:][::-1]
+      results = []
+      for node_id in top_k:
+        human_string = node_lookup.id_to_string(node_id)
+        score = predictions[node_id]
+        results.append((human_string, score))
+        #print('%s (score = %.5f)' % (human_string, score))
+      return results
 
 
 def maybe_download_and_extract():
@@ -213,12 +219,12 @@ def download_url(url, filename=None):
     #print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
   return filepath
 
-def download_show_and_run(url, filename=None):
+def download_show_and_run(url, filename=None, device=''):
     image = download_url(url, filename)
     if image:
         matplotlib.rc('xtick', labelsize=20) 
         matplotlib.rc('ytick', labelsize=20) 
-        results = run_inference_on_image(image)
+        results = run_inference_on_image(image, device)
         labels, scores = zip(*results)
 
         fig, ax = plt.subplots(figsize=(18, 5))
